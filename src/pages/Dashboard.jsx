@@ -19,14 +19,13 @@ export default function Dashboard(){
     <div>
       <div className="dashboard-header mb-4">
         <h2>Manage students with ease</h2>
-        <p className="text-secondary">Search, edit, and track student records in one colorful dashboard.</p>
       </div>
 
       <div className="row gx-4 gy-3 mb-4">
-        <div className="col-md-4">
-          <div className="stats-card shadow-sm">
+        <div className="col-md-4 d-flex justify-content-center">
+          <div className="stats-card shadow-sm text-center">
             <h6>Total Students</h6>
-            <h3>{total}</h3>
+            <h3 className="stats-value">{total}</h3>
           </div>
         </div>
         <div className="col-md-8">
