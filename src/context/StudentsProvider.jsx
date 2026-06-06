@@ -8,13 +8,21 @@ export function StudentsProvider({ children }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  function normalizeStudent(s) {
+    return {
+      ...s,
+      rollNo: s.rollNo ?? s.rollno ?? s.roll_no ?? s.roll
+    }
+  }
+
   useEffect(() => { load() }, [])
 
   async function load() {
     setLoading(true)
     try {
       const data = await api.fetchStudents()
-      setStudents(data)
+      const normalized = Array.isArray(data) ? data.map(normalizeStudent) : []
+      setStudents(normalized)
     } catch (e) {
       setError(e.message)
     } finally { setLoading(false) }
@@ -22,14 +30,16 @@ export function StudentsProvider({ children }) {
 
   async function addStudent(s) {
     const created = await api.createStudent(s)
-    setStudents(prev => [...prev, created])
-    return created
+    const norm = normalizeStudent(created)
+    setStudents(prev => [...prev, norm])
+    return norm
   }
 
   async function editStudent(id, s) {
     const updated = await api.updateStudent(id, s)
-    setStudents(prev => prev.map(p => p.id===updated.id? updated: p))
-    return updated
+    const norm = normalizeStudent(updated)
+    setStudents(prev => prev.map(p => p.id===norm.id? norm: p))
+    return norm
   }
 
   async function removeStudent(id) {

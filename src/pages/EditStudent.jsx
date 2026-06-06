@@ -10,7 +10,12 @@ export default function EditStudent(){
   const [form, setForm] = useState(null)
 
   useEffect(()=>{
-    api.fetchStudent(id).then(s=> setForm({...s, phone: s.mobile || s.phone, studentClass: s.studentClass || s.course}))
+    api.fetchStudent(id).then(s=> setForm({
+      ...s,
+      rollNo: s.rollNo ?? s.rollno ?? s.roll_no ?? s.roll,
+      phone: s.mobile || s.phone,
+      studentClass: s.studentClass || s.course
+    }))
   },[id])
 
   async function submit(e){
