@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react'
-import { useStudents } from '../context/StudentsProvider'
-import SearchBar from '../components/SearchBar'
-import StudentTable from '../components/StudentTable'
+import SearchBar from '../../components/SearchBar'
+import { useStudents } from '../../context/StudentsProvider'
+import StudentTable from '../../components/StudentTable'
+// import StudentRow from '../../components/StudentRow'
 
-export default function Dashboard(){
+export default function Students(){
   const { students, loading, error, removeStudent } = useStudents()
   const [query, setQuery] = useState('')
 
@@ -18,7 +19,6 @@ export default function Dashboard(){
   return (
     <div>
       <div className="dashboard-header mb-4">
-        <h2>Manage students with ease</h2>
       </div>
 
       <div className="row gx-4 gy-3 mb-4">
