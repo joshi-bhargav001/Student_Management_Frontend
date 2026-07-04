@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8080/api/students'
+export const API_BASE = 'http://localhost:8080/api/students'
 
 export async function fetchStudents() {
   const res = await fetch(API_BASE)

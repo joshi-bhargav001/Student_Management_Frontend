@@ -9,6 +9,7 @@ import Teacher from './pages/teacher/Teacher'
 import AddStudent from './pages/AddStudent'
 import EditStudent from './pages/EditStudent'
 import { StudentsProvider } from './context/StudentsProvider'
+import Footer from './components/Footer'
 
 export default function App() {
   return (
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/add" element={<AddStudent/>} />
             <Route path="/edit/:id" element={<EditStudent/>} />
           </Routes>
+          <Footer />
         </div>
       </div>
     </StudentsProvider>
