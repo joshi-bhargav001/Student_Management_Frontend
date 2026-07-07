@@ -15,6 +15,7 @@ export default function Students(){
   }, [students, query])
 
   const total = students.length
+  const [showTable, setShowTable] = useState(true)
 
   return (
     <div>
@@ -22,23 +23,35 @@ export default function Students(){
       </div>
 
       <div className="row gx-4 gy-3 mb-4">
-        <div className="col-md-4 d-flex justify-content-center">
+        <div className="col-md-4 d-flex flex-column align-items-start">
           <div className="stats-card shadow-sm text-center">
             <h6>Total Students</h6>
             <h3 className="stats-value">{total}</h3>
           </div>
         </div>
+
         <div className="col-md-8">
-          <div className="search-card shadow-sm p-3">
-            <SearchBar value={query} onChange={setQuery} />
+          <div className="d-flex align-items-center">
+            <div className="search-card shadow-sm p-3 flex-grow-1">
+              <SearchBar value={query} onChange={setQuery} />
+            </div>
+            <div className="ms-3">
+              <button className="btn btn-outline-primary" onClick={() => setShowTable(s => !s)}>
+                {showTable ? 'Hide Student' : 'Show Student'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
+      
+
       {loading && <div className="alert alert-info">Loading...</div>}
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <StudentTable students={filtered} onDelete={async (id)=>{ if(confirm('Delete?')) await removeStudent(id) }} />
+      {showTable && (
+        <StudentTable students={filtered} onDelete={async (id)=>{ if(confirm('Delete?')) await removeStudent(id) }} />
+      )}
     </div>
   )
 }
