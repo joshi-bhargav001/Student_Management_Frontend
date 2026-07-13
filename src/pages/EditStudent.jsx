@@ -22,7 +22,7 @@ export default function EditStudent(){
     e.preventDefault()
     const payload = { ...form, mobile: form.phone, course: form.studentClass }
     await editStudent(id, payload)
-    nav('/')
+    nav('/students')
   }
 
   if(!form) return <div className="alert alert-info">Loading...</div>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import * as api from '../api/students'
+import { useAuth } from './AuthContext'
 
 const StudentsContext = createContext(null)
 
@@ -7,6 +8,7 @@ export function StudentsProvider({ children }) {
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const { token } = useAuth()
 
   function normalizeStudent(s) {
     return {
@@ -15,7 +17,13 @@ export function StudentsProvider({ children }) {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    if (!token) {
+      setStudents([])
+      return
+    }
+    load()
+  }, [token])
 
   async function load() {
     setLoading(true)

@@ -11,7 +11,7 @@ export default function AddStudent(){
     e.preventDefault()
     const payload = { ...form, mobile: form.phone, course: form.studentClass }
     await addStudent(payload)
-    nav('/')
+    nav('/students')
   }
 
   return (

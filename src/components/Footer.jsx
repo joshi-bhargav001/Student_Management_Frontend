@@ -9,7 +9,12 @@ export default function Footer(){
     const controller = new AbortController()
     const checkServer = async () => {
       try {
-        const res = await fetch(API_BASE, { cache: 'no-store', signal: controller.signal })
+        const token = localStorage.getItem('jwtToken')
+        const headers = { 'Content-Type': 'application/json' }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+        const res = await fetch(API_BASE, { cache: 'no-store', signal: controller.signal, headers })
         setServerStatus(res.ok ? 'online' : 'offline')
       } catch (error) {
         setServerStatus('offline')

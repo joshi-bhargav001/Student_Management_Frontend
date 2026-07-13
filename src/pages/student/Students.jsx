@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react'
 import SearchBar from '../../components/SearchBar'
+import { useAuth } from '../../context/AuthContext'
 import { useStudents } from '../../context/StudentsProvider'
 import StudentTable from '../../components/StudentTable'
-// import StudentRow from '../../components/StudentRow'
 
 export default function Students(){
   const { students, loading, error, removeStudent } = useStudents()
+  const { user } = useAuth()
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(()=>{
@@ -16,6 +17,7 @@ export default function Students(){
 
   const total = students.length
   const [showTable, setShowTable] = useState(true)
+  const canManage = user?.role === 'ADMIN'
 
   return (
     <div>
@@ -44,13 +46,11 @@ export default function Students(){
         </div>
       </div>
 
-      
-
       {loading && <div className="alert alert-info">Loading...</div>}
       {error && <div className="alert alert-danger">{error}</div>}
 
       {showTable && (
-        <StudentTable students={filtered} onDelete={async (id)=>{ if(confirm('Delete?')) await removeStudent(id) }} />
+        <StudentTable students={filtered} onDelete={async (id)=>{ if(confirm('Delete?')) await removeStudent(id) }} canManage={canManage} />
       )}
     </div>
   )
