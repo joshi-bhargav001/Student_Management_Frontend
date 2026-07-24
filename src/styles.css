@@ -258,6 +258,39 @@ body {
   text-transform: uppercase;
 }
 
+.student-footer {
+  border-radius: 18px;
+  background: rgba(255,255,255,0.94);
+}
+
+.student-pagination .page-link {
+  min-width: 44px;
+  border-radius: 12px !important;
+  border-color: rgba(148,163,184,0.24);
+  color: #334155;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.student-pagination .page-item + .page-item .page-link {
+  margin-left: 0.4rem;
+}
+
+.student-pagination .page-item:not(.disabled) .page-link:hover {
+  background: rgba(99,102,241,0.08);
+  color: #4f46e5;
+}
+
+.student-pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.student-pagination .page-item.disabled .page-link {
+  color: #94a3b8;
+}
+
 .search-card {
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
@@ -413,8 +446,18 @@ body {
 }
 
 .table-row td a:hover {
-  text-decoration: underline;
   color: #0f172a; /* slightly darker on hover */
+}
+
+.student-contact-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.student-contact-link:hover,
+.student-contact-link:focus {
+  color: inherit;
+  text-decoration: none;
 }
 
 .auth-shell {
@@ -468,13 +511,20 @@ body {
 }
 
 .role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 78px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.8rem;
-  padding: 0.4rem 0.9rem;
-  border: 2px solid;
+  letter-spacing: 0.06em;
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 0.55rem 1rem;
+  border: 1px solid;
   cursor: default;
+  box-shadow: 0 10px 20px rgba(15,23,42,0.08);
 }
 
 .role-badge:hover {
@@ -482,15 +532,15 @@ body {
 }
 
 .role-admin {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.08) 100%);
-  border-color: #dc2626;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-color: rgba(220, 38, 38, 0.35);
   color: #991b1b;
 }
 
 .role-user {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.08) 100%);
-  border-color: #2563eb;
-  color: #1e40af;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #1d4ed8;
 }
 
 /* Footer styles */

@@ -9,8 +9,8 @@ export default function StudentRow({ student, onDelete, canManage }) {
     <tr className="table-row">
       <td><strong>{rollDisplay}</strong></td>
       <td>{student.name}</td>
-      <td><a href={`mailto:${student.email}`}>{student.email}</a></td>
-      <td><a href={`tel:${student.mobile || student.phone}`}>{student.mobile || student.phone}</a></td>
+      <td><a className="student-contact-link" href={`mailto:${student.email}`}>{student.email}</a></td>
+      <td><a className="student-contact-link" href={`tel:${student.mobile || student.phone}`}>{student.mobile || student.phone}</a></td>
       <td>{student.studentClass || student.course}</td>
       <td>{student.dob || '-'}</td>
       <td>

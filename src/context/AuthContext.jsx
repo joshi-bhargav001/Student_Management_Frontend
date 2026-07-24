@@ -1,7 +1,33 @@
-import React, { createContext, useContext, useMemo, useState } from 'react'
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { loginUser, registerUser } from '../api/auth'
 
 const AuthContext = createContext(null)
+
+function decodeJwtPayload(token) {
+  if (!token) return null
+
+  try {
+    const [, payload] = token.split('.')
+    if (!payload) return null
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), '=')
+    return JSON.parse(window.atob(padded))
+  } catch {
+    return null
+  }
+}
+
+function getTokenExpiryTime(token) {
+  const payload = decodeJwtPayload(token)
+  const exp = Number(payload?.exp)
+  return Number.isFinite(exp) ? exp * 1000 : null
+}
+
+function isTokenExpired(token) {
+  const expiryTime = getTokenExpiryTime(token)
+  return !expiryTime || expiryTime <= Date.now()
+}
 
 function normalizeRole(role) {
   if (!role) {
@@ -86,6 +112,13 @@ function readStoredAuth() {
   if (typeof window === 'undefined') return { token: null, user: null }
   const token = window.localStorage.getItem('jwtToken')
   const storedUser = window.localStorage.getItem('currentUser')
+
+  if (token && isTokenExpired(token)) {
+    window.localStorage.removeItem('jwtToken')
+    window.localStorage.removeItem('currentUser')
+    return { token: null, user: null }
+  }
+
   return {
     token,
     user: storedUser ? JSON.parse(storedUser) : null
@@ -115,6 +148,29 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function clearAuthState(message = '') {
+    setToken(null)
+    setUser(null)
+    setAuthError(message)
+    persistAuth(null, null)
+  }
+
+  useEffect(() => {
+    if (!token) return undefined
+
+    const expiryTime = getTokenExpiryTime(token)
+    if (!expiryTime || expiryTime <= Date.now()) {
+      clearAuthState('Your session has expired. Please sign in again.')
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      clearAuthState('Your session has expired. Please sign in again.')
+    }, expiryTime - Date.now())
+
+    return () => window.clearTimeout(timeoutId)
+  }, [token])
+
   async function register(payload) {
     setLoading(true)
     setAuthError('')
@@ -142,6 +198,9 @@ export function AuthProvider({ children }) {
       const nextToken = response?.token || response?.jwt || response?.accessToken || response?.access_token || response?.data?.token || response?.data?.jwt || ''
       if (!nextToken) {
         throw new Error('No authentication token was returned by the server')
+      }
+      if (isTokenExpired(nextToken)) {
+        throw new Error('The server returned an expired token. Please sign in again.')
       }
       console.log('Token extracted:', nextToken.substring(0, 50) + '...')
 
@@ -187,10 +246,7 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
-    setToken(null)
-    setUser(null)
-    setAuthError('')
-    persistAuth(null, null)
+    clearAuthState('')
   }
 
   const value = useMemo(() => ({

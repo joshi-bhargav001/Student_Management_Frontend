@@ -15,7 +15,10 @@ import Students from './pages/student/Students'
 
 function AppShell() {
   const { user, logout, isAuthenticated } = useAuth()
-  const roleLabel = user?.role === 'ADMIN' ? 'Administrator' : 'User'
+  const isAdmin = user?.role === 'ADMIN'
+  const roleBadgeClass = isAdmin ? 'role-admin' : 'role-user'
+  const roleBadgeText = isAdmin ? 'ADMIN' : 'USER'
+  const roleLabel = isAdmin ? 'Administrator' : ''
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -43,18 +46,18 @@ function AppShell() {
                 <NavLink to="/courses" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Courses</NavLink>
                 <NavLink to="/attendance" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Attendance</NavLink>
                 <NavLink to="/teacher" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Teacher</NavLink>
-                {user?.role === 'ADMIN' && (
+                {isAdmin && (
                   <Link className="btn btn-gradient btn-sm add-student-btn" to="/add">Add Student</Link>
                 )}
-                {user?.role === 'ADMIN' && (
+                {isAdmin && (
                   <span className="admin-label">{roleLabel}</span>
                 )}
               </div>
 
               <div className="app-header-actions">
-                {user?.role === 'ADMIN' && (
-                  <button className={`btn btn-sm role-badge role-admin`}>
-                    {user?.role === 'ADMIN' ? 'ADMIN' : 'User'}
+                {user?.role && (
+                  <button className={`btn btn-sm role-badge ${roleBadgeClass}`}>
+                    {roleBadgeText}
                   </button>
                 )}
                 <button className="btn btn-outline-secondary btn-sm" onClick={handleLogout}>Logout</button>
