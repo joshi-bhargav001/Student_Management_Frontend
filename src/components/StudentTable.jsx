@@ -12,7 +12,7 @@ export default function StudentTable({ students, onDelete, canManage }) {
             <th>Email</th>
             <th>Phone</th>
             <th>Class</th>
-            <th>DOB</th>
+            <th>Photo</th>
             <th>Actions</th>
           </tr>
         </thead>

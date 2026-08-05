@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -11,6 +11,8 @@ import AuthPage from './pages/auth/AuthPage'
 import Courses from './pages/courses/Courses'
 import Dashboard from './pages/dashboard/Dashboard'
 import Teacher from './pages/teacher/Teacher'
+import AddTeacher from './pages/teacher/AddTeacher'
+import EditTeacher from './pages/teacher/EditTeacher'
 import Students from './pages/student/Students'
 
 function AppShell() {
@@ -19,6 +21,8 @@ function AppShell() {
   const roleBadgeClass = isAdmin ? 'role-admin' : 'role-user'
   const roleBadgeText = isAdmin ? 'ADMIN' : 'USER'
   const roleLabel = isAdmin ? 'Administrator' : ''
+  const location = useLocation()
+  const isTeacherPage = location.pathname.startsWith('/teacher')
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -46,8 +50,11 @@ function AppShell() {
                 <NavLink to="/courses" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Courses</NavLink>
                 <NavLink to="/attendance" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Attendance</NavLink>
                 <NavLink to="/teacher" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Teacher</NavLink>
-                {isAdmin && (
+                {isAdmin && !isTeacherPage && (
                   <Link className="btn btn-gradient btn-sm add-student-btn" to="/add">Add Student</Link>
+                )}
+                {isAdmin && isTeacherPage && (
+                  <Link className="btn btn-gradient btn-sm add-student-btn" to="/add-teacher">Add Teacher</Link>
                 )}
                 {isAdmin && (
                   <span className="admin-label">{roleLabel}</span>
@@ -74,6 +81,8 @@ function AppShell() {
           <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
           <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
           <Route path="/teacher" element={<ProtectedRoute><Teacher /></ProtectedRoute>} />
+          <Route path="/add-teacher" element={<ProtectedRoute adminOnly><AddTeacher /></ProtectedRoute>} />
+          <Route path="/edit-teacher/:id" element={<ProtectedRoute adminOnly><EditTeacher /></ProtectedRoute>} />
           <Route path="/add" element={<ProtectedRoute adminOnly><AddStudent /></ProtectedRoute>} />
           <Route path="/edit/:id" element={<ProtectedRoute adminOnly><EditStudent /></ProtectedRoute>} />
         </Routes>

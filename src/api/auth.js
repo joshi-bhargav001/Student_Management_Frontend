@@ -43,3 +43,26 @@ export async function loginUser(payload) {
 
   return res.json()
 }
+
+/**
+ * Call POST /api/auth/refresh with the stored refresh token.
+ * Returns the new access token string, or throws if refresh failed.
+ */
+export async function refreshAccessToken(refreshToken) {
+  const res = await fetch(`${API_BASE}/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken })
+  })
+
+  if (!res.ok) {
+    const message = await buildResponseError(res, 'Session expired. Please sign in again.')
+    throw new Error(message)
+  }
+
+  const data = await res.json()
+  // Support various response field names from the backend
+  const newToken = data?.token || data?.accessToken || data?.access_token || data?.jwt || ''
+  if (!newToken) throw new Error('No token returned from refresh endpoint')
+  return newToken
+}

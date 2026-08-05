@@ -4,6 +4,24 @@ import { useAuth } from './AuthContext'
 
 const StudentsContext = createContext(null)
 
+function isMeaningfulPhotoValue(value) {
+  if (value === undefined || value === null) return false
+
+  const normalized = String(value).trim()
+  if (!normalized || normalized.toUpperCase() === 'NULL') return false
+
+  return true
+}
+
+function normalizePhotoUrl(value) {
+  if (!isMeaningfulPhotoValue(value)) return ''
+  if (/^https?:\/\//i.test(value)) return value
+
+  const cleaned = String(value).replace(/\\/g, '/')
+  if (cleaned.startsWith('/')) return `http://localhost:8080${cleaned}`
+  return `http://localhost:8080/${cleaned}`
+}
+
 export function StudentsProvider({ children }) {
   const [students, setStudents] = useState([])
   const [pageInfo, setPageInfo] = useState({
@@ -21,9 +39,12 @@ export function StudentsProvider({ children }) {
   const lastLoadParamsRef = useRef({ page: 0, size: 7, keyword: '' })
 
   function normalizeStudent(s) {
+    const savedPhoto = s.photoUrl || s.photo || s.imageUrl || s.profilePhoto || s.profileImage || s.image || s.photoPath || s.fileName || s.profilePic || ''
+
     return {
       ...s,
-      rollNo: s.rollNo ?? s.rollno ?? s.roll_no ?? s.roll
+      rollNo: s.rollNo ?? s.rollno ?? s.roll_no ?? s.roll,
+      photoUrl: normalizePhotoUrl(savedPhoto)
     }
   }
 
@@ -82,8 +103,32 @@ export function StudentsProvider({ children }) {
     await load(lastLoadParamsRef.current)
   }
 
+  async function uploadPhoto(id, file) {
+    const response = await api.uploadStudentPhoto(id, file)
+
+    await load(lastLoadParamsRef.current)
+
+    if (response && typeof response === 'object') {
+      const normalized = normalizeStudent(response)
+      setStudents(current =>
+        current.map(student => (student.id === id ? { ...student, ...normalized } : student))
+      )
+      return normalized
+    }
+
+    return response
+  }
+
+  async function removePhoto(id) {
+    await api.deleteStudentPhoto(id)
+    await load(lastLoadParamsRef.current)
+    setStudents(current =>
+      current.map(student => (student.id === id ? { ...student, photoUrl: '' } : student))
+    )
+  }
+
   return (
-    <StudentsContext.Provider value={{ students, pageInfo, loading, error, load, addStudent, editStudent, removeStudent }}>
+    <StudentsContext.Provider value={{ students, pageInfo, loading, error, load, addStudent, editStudent, removeStudent, uploadPhoto, removePhoto }}>
       {children}
     </StudentsContext.Provider>
   )
