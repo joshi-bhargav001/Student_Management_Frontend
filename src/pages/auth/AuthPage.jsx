@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 const initialForm = {
@@ -10,20 +10,33 @@ const initialForm = {
   confirmPassword: '',
   rememberMe: false
 }
+const OTP_STORAGE_KEY = 'pendingOtpSignup'
 
 export default function AuthPage() {
+  const location = useLocation()
   const navigate = useNavigate()
-  const { login, register, loading, authError, isAuthenticated } = useAuth()
+  const { login, requestOtp, loading, authError, isAuthenticated } = useAuth()
   const [mode, setMode] = useState('signup')
   const [form, setForm] = useState(initialForm)
   const [feedback, setFeedback] = useState({ type: '', message: '' })
   const [validated, setValidated] = useState(false)
+  const [showSigninPassword, setShowSigninPassword] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard', { replace: true })
     }
   }, [isAuthenticated, navigate])
+
+  useEffect(() => {
+    if (location.state?.mode === 'signin') {
+      setMode('signin')
+      setForm(initialForm)
+      setFeedback({ type: '', message: '' })
+      setValidated(false)
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [location.pathname, location.state, navigate])
 
   function handleChange(event) {
     const { name, value, type, checked } = event.target
@@ -64,17 +77,19 @@ export default function AuthPage() {
 
     try {
       if (mode === 'signup') {
-        await register({
+        const signupPayload = {
           name: form.name,
           username: form.username,
           email: form.email,
           password: form.password,
           confirmPassword: form.confirmPassword
+        }
+
+        await requestOtp(signupPayload)
+        window.sessionStorage.setItem(OTP_STORAGE_KEY, JSON.stringify(signupPayload))
+        navigate('/auth/verify-otp', {
+          state: { signupData: signupPayload }
         })
-        setFeedback({ type: 'success', message: 'Registration successful. Please sign in to continue.' })
-        setForm({ ...initialForm, rememberMe: false })
-        setMode('signin')
-        setValidated(false)
       } else {
         await login({
           username: form.username,
@@ -137,7 +152,14 @@ export default function AuthPage() {
 
                     <div className="mb-3">
                       <label className="form-label">Username</label>
-                      <input name="username" value={form.username} onChange={handleChange} className="form-control" autoComplete="off" required />
+                      <input
+                        name="signupUsername"
+                        value={form.username}
+                        onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
+                        className="form-control"
+                        autoComplete="new-password"
+                        required
+                      />
                       <div className="invalid-feedback">Please provide a username.</div>
                     </div>
 
@@ -163,7 +185,7 @@ export default function AuthPage() {
                       {loading ? (
                         <span className="d-flex align-items-center justify-content-center gap-2">
                           <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                          Creating account...
+                          Sending OTP...
                         </span>
                       ) : 'Register'}
                     </button>
@@ -172,13 +194,54 @@ export default function AuthPage() {
                   <>
                     <div className="mb-3">
                       <label className="form-label">Username</label>
-                      <input name="username" value={form.username} onChange={handleChange} className="form-control" autoComplete="off" required />
+                      <input
+                        name="signinUsername"
+                        value={form.username}
+                        onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
+                        className="form-control"
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-form-type="other"
+                        required
+                      />
                       <div className="invalid-feedback">Please provide your username.</div>
                     </div>
 
                     <div className="mb-3">
                       <label className="form-label">Password</label>
-                      <input type="password" name="password" value={form.password} onChange={handleChange} className="form-control" autoComplete="current-password" required />
+                      <div className="password-input-wrap">
+                        <input
+                          type={showSigninPassword ? 'text' : 'password'}
+                          name="password"
+                          value={form.password}
+                          onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                          className="form-control password-input"
+                          autoComplete="new-password"
+                          data-lpignore="true"
+                          data-form-type="other"
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="password-toggle"
+                          onClick={() => setShowSigninPassword((prev) => !prev)}
+                          aria-label={showSigninPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showSigninPassword ? (
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M3 3l18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                              <path d="M10.58 10.58a2 2 0 102.84 2.84" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M9.88 5.09A10.94 10.94 0 0112 4c5 0 9.27 3.11 11 8-1 2.8-3.1 5.07-5.76 6.32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M6.61 6.61C4.62 8 3.08 9.84 2 12c1.73 4.89 6 8 10 8a10.8 10.8 0 004.23-.86" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M2 12s3.64-8 10-8 10 8 10 8-3.64 8-10 8-10-8-10-8z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                       <div className="invalid-feedback">Password is required.</div>
                     </div>
 

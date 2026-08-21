@@ -29,6 +29,36 @@ export async function registerUser(payload) {
   return res.json()
 }
 
+export async function sendOtp(payload) {
+  const res = await fetch(`${API_BASE}/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!res.ok) {
+    const message = await buildResponseError(res, 'Failed to send OTP')
+    throw new Error(message)
+  }
+
+  return res.json().catch(() => ({}))
+}
+
+export async function verifyOtp(payload) {
+  const res = await fetch(`${API_BASE}/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!res.ok) {
+    const message = await buildResponseError(res, 'OTP verification failed')
+    throw new Error(message)
+  }
+
+  return res.json().catch(() => ({}))
+}
+
 export async function loginUser(payload) {
   const res = await fetch(`${API_BASE}/login`, {
     method: 'POST',

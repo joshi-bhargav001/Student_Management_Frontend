@@ -108,7 +108,8 @@ export default function StudentRow({ student, onDelete, canManage }) {
       <td>{student.name}</td>
       <td><a className="student-contact-link" href={`mailto:${student.email}`}>{student.email}</a></td>
       <td><a className="student-contact-link" href={`tel:${student.mobile || student.phone}`}>{student.mobile || student.phone}</a></td>
-      <td>{student.studentClass || student.course}</td>
+      <td>{student.course || student.studentClass}</td>
+      <td>{student.division || '-'}</td>
       <td>
         {hasSavedPhoto ? (
           <>

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { loginUser, registerUser, refreshAccessToken } from '../api/auth'
+import { loginUser, refreshAccessToken, sendOtp } from '../api/auth'
 
 const AuthContext = createContext(null)
 
@@ -212,14 +212,14 @@ export function AuthProvider({ children }) {
     return () => window.clearTimeout(timeoutId)
   }, [token, doRefresh])
 
-  async function register(payload) {
+  async function requestOtp(payload) {
     setLoading(true)
     setAuthError('')
     try {
-      const response = await registerUser(payload)
-      return { success: true, message: response?.message || response?.detail || 'Registration successful' }
+      const response = await sendOtp(payload)
+      return { success: true, message: response?.message || response?.detail || 'OTP sent successfully' }
     } catch (error) {
-      const message = error?.message || 'Registration failed'
+      const message = error?.message || 'Failed to send OTP'
       setAuthError(message)
       throw new Error(message)
     } finally {
@@ -300,7 +300,7 @@ export function AuthProvider({ children }) {
     authError,
     isAuthenticated,
     login,
-    register,
+    requestOtp,
     logout,
     doRefresh
   }), [user, token, loading, authError, isAuthenticated, doRefresh])

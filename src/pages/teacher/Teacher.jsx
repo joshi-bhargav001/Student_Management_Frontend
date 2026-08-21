@@ -116,10 +116,7 @@ export default function Teacher() {
 
   return (
     <div>
-      <div className="dashboard-header mb-4">
-        <h2>Teachers</h2>
-        <p>Manage and view your teaching staff</p>
-      </div>
+      
 
       <div className="row gx-4 gy-3 mb-4">
         <div className="col-md-4 d-flex flex-column align-items-start">

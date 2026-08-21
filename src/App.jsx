@@ -8,10 +8,14 @@ import AddStudent from './pages/AddStudent'
 import EditStudent from './pages/EditStudent'
 import Attendance from './pages/attendance/Attendance'
 import AuthPage from './pages/auth/AuthPage'
+import EmailVerifiedPage from './pages/auth/EmailVerifiedPage'
+import OtpVerificationPage from './pages/auth/OtpVerificationPage'
 import Courses from './pages/courses/Courses'
 import Dashboard from './pages/dashboard/Dashboard'
 import Teacher from './pages/teacher/Teacher'
 import AddTeacher from './pages/teacher/AddTeacher'
+import AddCourse from './pages/courses/AddCourse'
+import EditCourse from './pages/courses/EditCourse'
 import EditTeacher from './pages/teacher/EditTeacher'
 import Students from './pages/student/Students'
 
@@ -23,6 +27,7 @@ function AppShell() {
   const roleLabel = isAdmin ? 'Administrator' : ''
   const location = useLocation()
   const isTeacherPage = location.pathname.startsWith('/teacher')
+  const isCoursePage = location.pathname.startsWith('/courses')
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -50,14 +55,14 @@ function AppShell() {
                 <NavLink to="/courses" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Courses</NavLink>
                 <NavLink to="/attendance" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Attendance</NavLink>
                 <NavLink to="/teacher" className={({ isActive }) => 'app-nav-link' + (isActive ? ' active' : '')}>Teacher</NavLink>
-                {isAdmin && !isTeacherPage && (
+                {isAdmin && !isTeacherPage && !isCoursePage && (
                   <Link className="btn btn-gradient btn-sm add-student-btn" to="/add">Add Student</Link>
                 )}
                 {isAdmin && isTeacherPage && (
                   <Link className="btn btn-gradient btn-sm add-student-btn" to="/add-teacher">Add Teacher</Link>
                 )}
-                {isAdmin && (
-                  <span className="admin-label">{roleLabel}</span>
+                {isAdmin && isCoursePage && (
+                  <Link className="btn btn-gradient btn-sm add-student-btn" to="/add-course">Add Course</Link>
                 )}
               </div>
 
@@ -75,6 +80,8 @@ function AppShell() {
 
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/verify-otp" element={<OtpVerificationPage />} />
+          <Route path="/auth/verified" element={<EmailVerifiedPage />} />
           <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
@@ -82,6 +89,8 @@ function AppShell() {
           <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
           <Route path="/teacher" element={<ProtectedRoute><Teacher /></ProtectedRoute>} />
           <Route path="/add-teacher" element={<ProtectedRoute adminOnly><AddTeacher /></ProtectedRoute>} />
+          <Route path="/add-course" element={<ProtectedRoute adminOnly><AddCourse /></ProtectedRoute>} />
+          <Route path="/edit-course/:id" element={<ProtectedRoute adminOnly><EditCourse /></ProtectedRoute>} />
           <Route path="/edit-teacher/:id" element={<ProtectedRoute adminOnly><EditTeacher /></ProtectedRoute>} />
           <Route path="/add" element={<ProtectedRoute adminOnly><AddStudent /></ProtectedRoute>} />
           <Route path="/edit/:id" element={<ProtectedRoute adminOnly><EditStudent /></ProtectedRoute>} />
