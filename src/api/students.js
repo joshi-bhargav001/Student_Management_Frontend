@@ -76,31 +76,57 @@ function buildQuery(params = {}) {
   return query.toString()
 }
 
-function normalizePageResponse(data, fallbackSize = 7) {
-  const content =
-    Array.isArray(data) ? data :
-      Array.isArray(data?.content) ? data.content :
-        Array.isArray(data?.students) ? data.students :
-          Array.isArray(data?.data) ? data.data :
-            []
+function normalizePageResponse(data, fallbackPage = 0, fallbackSize = 7, keyword = '') {
+  const reqPage = Number(fallbackPage) || 0;
+  const reqSize = Number(fallbackSize) || 7;
 
-  const page = Number.isFinite(Number(data?.number)) ? Number(data.number) : 0
-  const size = Number.isFinite(Number(data?.size)) ? Number(data.size) : fallbackSize
-  const totalElements = Number.isFinite(Number(data?.totalElements)) ? Number(data.totalElements) : content.length
-  const totalPages = Number.isFinite(Number(data?.totalPages)) ? Number(data.totalPages) : (size > 0 ? Math.ceil(totalElements / size) : 1)
+  if (data && Array.isArray(data.content) && data.totalPages !== undefined) {
+    return {
+      content: data.content,
+      pageInfo: {
+        page: data.number,
+        size: data.size,
+        totalElements: data.totalElements,
+        totalPages: data.totalPages,
+        numberOfElements: data.numberOfElements || data.content.length,
+        first: data.first,
+        last: data.last
+      }
+    };
+  }
+
+  let rawList = Array.isArray(data) ? data : (Array.isArray(data?.students) ? data.students : (Array.isArray(data?.data) ? data.data : []));
+
+  if (keyword && keyword.trim()) {
+    const kw = keyword.trim().toLowerCase();
+    rawList = rawList.filter(s => {
+      const name = s.name || s.firstName || '';
+      const roll = s.rollNo || s.rollno || s.roll_no || s.roll || '';
+      const email = s.email || '';
+      const course = s.course || s.studentClass || '';
+      return name.toLowerCase().includes(kw) || String(roll).toLowerCase().includes(kw) || email.toLowerCase().includes(kw) || course.toLowerCase().includes(kw);
+    });
+  }
+
+  const totalElements = rawList.length;
+  const totalPages = reqSize > 0 ? Math.ceil(totalElements / reqSize) : 1;
+  const safePage = isNaN(reqPage) ? 0 : Math.max(0, Math.min(reqPage, Math.max(totalPages - 1, 0)));
+  const start = safePage * reqSize;
+  const end = start + reqSize;
+  const content = rawList.slice(start, end);
 
   return {
     content,
     pageInfo: {
-      page,
-      size,
+      page: safePage,
+      size: reqSize,
       totalElements,
       totalPages,
       numberOfElements: content.length,
-      first: Boolean(data?.first ?? page === 0),
-      last: Boolean(data?.last ?? page >= Math.max(totalPages - 1, 0))
+      first: safePage === 0,
+      last: safePage >= Math.max(totalPages - 1, 0)
     }
-  }
+  };
 }
 
 export async function fetchStudents() {
@@ -109,20 +135,46 @@ export async function fetchStudents() {
   return res.json()
 }
 
+export async function fetchDivisions() {
+  const res = await fetchWithRefresh(`${API_BASE}/divisions`, { headers: getAuthHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch divisions')
+  return res.json()
+}
+
+/**
+ * Fetch students filtered by course and/or division.
+ *   GET /api/students/course?course=BCA
+ *   GET /api/students/course-division?course=MCA&division=A
+ */
+export async function fetchStudentsByFilter({ course = '', division = '', page = 0, size = 7, keyword = '' } = {}) {
+  let url
+  if (course && division) {
+    url = `${API_BASE}/course-division?course=${encodeURIComponent(course)}&division=${encodeURIComponent(division)}&page=${page}&size=${size}`
+  } else if (course) {
+    url = `${API_BASE}/course?course=${encodeURIComponent(course)}&page=${page}&size=${size}`
+  } else {
+    url = API_BASE
+  }
+  const res = await fetchWithRefresh(url, { headers: getAuthHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch students')
+  const data = await res.json()
+  return normalizePageResponse(data, page, size, keyword)
+}
+
 export async function fetchStudentsPage({ page = 0, size = 7, sortBy, direction, keyword = '' } = {}) {
   if (keyword && keyword.trim()) {
-    const searchQuery = buildQuery({ keyword: keyword.trim() })
+    const searchQuery = buildQuery({ keyword: keyword.trim(), page, size })
     const res = await fetchWithRefresh(`${API_BASE}/search${searchQuery ? `?${searchQuery}` : ''}`, { headers: getAuthHeaders() })
     if (!res.ok) throw new Error('Failed to search students')
     const data = await res.json()
-    return normalizePageResponse(data, size)
+    return normalizePageResponse(data, page, size)
   }
 
   const query = buildQuery({ page, size, sortby: sortBy, direction })
   const res = await fetchWithRefresh(`${API_BASE}/pages${query ? `?${query}` : ''}`, { headers: getAuthHeaders() })
   if (!res.ok) throw new Error('Failed to fetch students')
   const data = await res.json()
-  return normalizePageResponse(data, size)
+  return normalizePageResponse(data, page, size)
 }
 
 export async function fetchStudent(id) {

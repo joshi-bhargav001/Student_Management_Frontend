@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import SearchBar from '../../components/SearchBar'
 import { deleteTeacher, loadTeachers } from '../../api/teacher'
+import { useConfirm } from '../../context/ConfirmDialogContext'
 
 function buildPaginationItems(currentPage, totalPages) {
   if (totalPages <= 1) return []
@@ -27,6 +28,7 @@ function buildPaginationItems(currentPage, totalPages) {
 
 export default function Teacher() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const canManage = user?.role === 'ADMIN'
 
   const [teachers, setTeachers] = useState([])
@@ -87,18 +89,23 @@ export default function Teacher() {
   }, [query])
 
   async function handleDeleteTeacher(teacherId) {
-    if (!window.confirm('Are you sure you want to delete this teacher?')) return
-
-    setDeletingTeacherId(teacherId)
-    try {
-      await deleteTeacher(teacherId)
-      await load({ page: currentPage, size: pageSize, keyword: query.trim() })
-      window.alert('Teacher deleted successfully')
-    } catch (err) {
-      window.alert(err.message || 'Failed to delete teacher')
-    } finally {
-      setDeletingTeacherId(null)
-    }
+    confirm({
+      title: 'Delete Teacher?',
+      message: 'Are you sure you want to delete this teacher?\nThis action cannot be undone.',
+      confirmText: 'Delete',
+      successMessage: 'Transaction Successful',
+      onConfirm: async () => {
+        setDeletingTeacherId(teacherId)
+        try {
+          await deleteTeacher(teacherId)
+          await load({ page: currentPage, size: pageSize, keyword: query.trim() })
+        } catch (err) {
+          window.alert(err.message || 'Failed to delete teacher')
+        } finally {
+          setDeletingTeacherId(null)
+        }
+      }
+    }).catch(console.error)
   }
 
   const total = pageInfo.totalElements ?? teachers.length
@@ -116,7 +123,7 @@ export default function Teacher() {
 
   return (
     <div>
-      
+
 
       <div className="row gx-4 gy-3 mb-4">
         <div className="col-md-4 d-flex flex-column align-items-start">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { updateTeacher } from '../../api/teacher'
+import { useConfirm } from '../../context/ConfirmDialogContext'
 
 const initialForm = {
     name: '',
@@ -17,6 +18,7 @@ export default function EditTeacher() {
     const nav = useNavigate()
     const { id } = useParams()
     const location = useLocation()
+    const confirm = useConfirm()
     const [form, setForm] = useState(initialForm)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -49,7 +51,7 @@ export default function EditTeacher() {
 
         try {
             await updateTeacher(id, form)
-            window.alert('Teacher updated successfully')
+            await confirm.success('Edit Teacher', 'Transaction Completed')
             nav('/teacher')
         } catch (err) {
             window.alert(err.message || 'Failed to update teacher')

@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { StudentsProvider } from './context/StudentsProvider'
+import { ConfirmDialogProvider, useConfirm } from './context/ConfirmDialogContext'
 import AddStudent from './pages/AddStudent'
 import EditStudent from './pages/EditStudent'
 import Attendance from './pages/attendance/Attendance'
@@ -21,6 +22,7 @@ import Students from './pages/student/Students'
 
 function AppShell() {
   const { user, logout, isAuthenticated } = useAuth()
+  const confirm = useConfirm()
   const isAdmin = user?.role === 'ADMIN'
   const roleBadgeClass = isAdmin ? 'role-admin' : 'role-user'
   const roleBadgeText = isAdmin ? 'ADMIN' : 'USER'
@@ -30,9 +32,15 @@ function AppShell() {
   const isCoursePage = location.pathname.startsWith('/courses')
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      logout()
-    }
+    confirm({
+      title: 'Logout?',
+      message: 'Are you sure you want to logout?',
+      confirmText: 'Logout',
+      successMessage: 'Logout Successful',
+      onConfirm: async () => {
+        logout()
+      }
+    }).catch(console.error)
   }
 
   return (
@@ -104,10 +112,12 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <StudentsProvider>
-        <AppShell />
-      </StudentsProvider>
-    </AuthProvider>
+    <ConfirmDialogProvider>
+      <AuthProvider>
+        <StudentsProvider>
+          <AppShell />
+        </StudentsProvider>
+      </AuthProvider>
+    </ConfirmDialogProvider>
   )
 }

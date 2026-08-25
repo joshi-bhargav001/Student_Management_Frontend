@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { Link } from 'react-router-dom'
 import { fetchStudentPhotoBlob } from '../api/students'
 import { useStudents } from '../context/StudentsProvider'
+import { useConfirm } from '../context/ConfirmDialogContext'
 
 export default function StudentRow({ student, onDelete, canManage }) {
   const rollDigits = String(student.rollNo ?? '').replace(/[^0-9]/g, '')
@@ -11,6 +12,7 @@ export default function StudentRow({ student, onDelete, canManage }) {
   const [photoLoadFailed, setPhotoLoadFailed] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [showPhotoPreview, setShowPhotoPreview] = useState(false)
+  const confirm = useConfirm()
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('')
   const [photoKey, setPhotoKey] = useState(0)
   const { uploadPhoto, removePhoto } = useStudents()
@@ -90,16 +92,23 @@ export default function StudentRow({ student, onDelete, canManage }) {
   }
 
   async function handleDeletePhoto() {
-    if (!window.confirm('Are you sure you want to delete this photo?')) return
-    try {
-      await removePhoto(student.id)
-      setPhotoPreviewUrl('')
-      setShowPhotoPreview(false)
-      setPhotoLoadFailed(false)
-      setPhotoKey(k => k + 1)
-    } catch (error) {
-      window.alert(error.message || 'Failed to delete photo')
-    }
+    confirm({
+      title: 'Delete Photo?',
+      message: 'Are you sure you want to delete this photo?',
+      confirmText: 'Delete',
+      successMessage: 'Transaction Successful',
+      onConfirm: async () => {
+        try {
+          await removePhoto(student.id)
+          setPhotoPreviewUrl('')
+          setShowPhotoPreview(false)
+          setPhotoLoadFailed(false)
+          setPhotoKey(k => k + 1)
+        } catch (error) {
+          window.alert(error.message || 'Failed to delete photo')
+        }
+      }
+    }).catch(console.error)
   }
 
   return (

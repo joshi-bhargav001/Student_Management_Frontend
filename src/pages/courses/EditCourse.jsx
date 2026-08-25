@@ -2,11 +2,13 @@ import React, { useState } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { updateCourse } from '../../api/course'
+import { useConfirm } from '../../context/ConfirmDialogContext'
 
 export default function EditCourse() {
     const navigate = useNavigate()
     const { id } = useParams()
     const { state } = useLocation()
+    const confirm = useConfirm()
     const { user } = useAuth()
     const isAdmin = user?.role === 'ADMIN'
 
@@ -41,7 +43,7 @@ export default function EditCourse() {
                 department: formData.department,
                 status: formData.status
             })
-            window.alert('Course updated successfully!')
+            await confirm.success('Edit Course', 'Transaction Completed')
             navigate('/courses')
         } catch (err) {
             setError(err.message || 'Failed to update course')

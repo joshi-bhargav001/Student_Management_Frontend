@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import * as api from '../api/students'
+import { fetchStudentsByFilter } from '../api/students'
 import { useAuth } from './AuthContext'
 
 const StudentsContext = createContext(null)
@@ -36,7 +37,7 @@ export function StudentsProvider({ children }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { token } = useAuth()
-  const lastLoadParamsRef = useRef({ page: 0, size: 7, keyword: '' })
+  const lastLoadParamsRef = useRef({ page: 0, size: 7, keyword: '', course: '', division: '' })
 
   function normalizeStudent(s) {
     const savedPhoto = s.photoUrl || s.photo || s.imageUrl || s.profilePhoto || s.profileImage || s.image || s.photoPath || s.fileName || s.profilePic || ''
@@ -75,7 +76,19 @@ export function StudentsProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.fetchStudentsPage(nextParams)
+      let data
+      if (nextParams.course || nextParams.division) {
+        // Server-side filter: GET /api/students?course={}&division={}
+        data = await fetchStudentsByFilter({
+          course: nextParams.course,
+          division: nextParams.division,
+          page: nextParams.page,
+          size: nextParams.size,
+          keyword: nextParams.keyword
+        })
+      } else {
+        data = await api.fetchStudentsPage(nextParams)
+      }
       const normalized = Array.isArray(data.content) ? data.content.map(normalizeStudent) : []
       setStudents(normalized)
       setPageInfo(data.pageInfo)
@@ -128,7 +141,7 @@ export function StudentsProvider({ children }) {
   }
 
   return (
-    <StudentsContext.Provider value={{ students, pageInfo, loading, error, load, addStudent, editStudent, removeStudent, uploadPhoto, removePhoto }}>
+    <StudentsContext.Provider value={{ students, pageInfo, loading, error, load, addStudent, editStudent, removeStudent, uploadPhoto, removePhoto, lastLoadParams: lastLoadParamsRef.current }}>
       {children}
     </StudentsContext.Provider>
   )

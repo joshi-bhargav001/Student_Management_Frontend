@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createTeacher } from '../../api/teacher'
+import { useConfirm } from '../../context/ConfirmDialogContext'
 
 export default function AddTeacher() {
     const nav = useNavigate()
+    const confirm = useConfirm()
     // As requested, mimicking AddStudent layout but static for now, and containing all the fields for ADMIN:
     // Name, Email, Number, Address, Gender, Subject, Experience, Salary
     const [form, setForm] = useState({
@@ -21,7 +23,7 @@ export default function AddTeacher() {
         e.preventDefault()
         try {
             await createTeacher(form)
-            alert('Teacher added successfully')
+            await confirm.success('Add Teacher', 'Transaction Completed')
             nav('/teacher')
         } catch (err) {
             alert(err.message || 'Failed to add teacher')

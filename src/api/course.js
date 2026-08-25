@@ -39,6 +39,18 @@ async function fetchWithRefresh(url, options = {}) {
 }
 
 /**
+ * Fetch course names for dropdown use.
+ * GET /api/courses?dropdown=true
+ */
+export async function fetchCoursesDropdown() {
+    const res = await fetchWithRefresh(`${API_BASE}?dropdown=true`, { headers: getAuthHeaders() })
+    if (!res.ok) throw new Error('Failed to fetch courses dropdown')
+    const data = await res.json()
+    // Handle plain array or paginated response
+    return Array.isArray(data) ? data : (data.content ?? data)
+}
+
+/**
  * GET all courses with optional pagination
  * GET http://localhost:8080/api/course/pages?page=0&size=10
  */

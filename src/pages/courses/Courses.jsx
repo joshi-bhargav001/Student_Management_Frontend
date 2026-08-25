@@ -3,9 +3,11 @@ import { useAuth } from '../../context/AuthContext'
 import { Link } from 'react-router-dom'
 import SearchBar from '../../components/SearchBar'
 import { loadCourses, searchCourses, deleteCourse } from '../../api/course'
+import { useConfirm } from '../../context/ConfirmDialogContext'
 
 export default function Courses() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const isAdmin = user?.role === 'ADMIN'
   const [courses, setCourses] = useState([])
   const [pageInfo, setPageInfo] = useState({ page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true })
@@ -75,17 +77,23 @@ export default function Courses() {
   }, [query])
 
   async function handleDelete(id) {
-    if (!window.confirm('Are you sure you want to delete this course?')) return
-    setDeletingId(id)
-    try {
-      await deleteCourse(id)
-      await load({ page: pageInfo.page, size: pageInfo.size, keyword: query.trim() })
-      window.alert('Course deleted successfully')
-    } catch (err) {
-      window.alert(err.message || 'Failed to delete course')
-    } finally {
-      setDeletingId(null)
-    }
+    confirm({
+      title: 'Delete Course?',
+      message: 'Are you sure you want to delete this course?\nThis action cannot be undone.',
+      confirmText: 'Delete',
+      successMessage: 'Transaction Successful',
+      onConfirm: async () => {
+        setDeletingId(id)
+        try {
+          await deleteCourse(id)
+          await load({ page: pageInfo.page, size: pageInfo.size, keyword: query.trim() })
+        } catch (err) {
+          window.alert(err.message || 'Failed to delete course')
+        } finally {
+          setDeletingId(null)
+        }
+      }
+    }).catch(console.error)
   }
 
   const total = pageInfo.totalElements ?? courses.length

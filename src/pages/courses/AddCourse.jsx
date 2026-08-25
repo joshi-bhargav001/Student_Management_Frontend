@@ -2,9 +2,11 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { createCourse } from '../../api/course'
+import { useConfirm } from '../../context/ConfirmDialogContext'
 
 export default function AddCourse() {
     const navigate = useNavigate()
+    const confirm = useConfirm()
     const { user } = useAuth()
     const isAdmin = user?.role === 'ADMIN'
     const [formData, setFormData] = useState({
@@ -37,7 +39,7 @@ export default function AddCourse() {
                 department: formData.department,
                 status: formData.status
             })
-            window.alert('Course added successfully!')
+            await confirm.success('Add Course', 'Transaction Completed')
             navigate('/courses')
         } catch (err) {
             setError(err.message || 'Failed to add course')
