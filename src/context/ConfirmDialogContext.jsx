@@ -30,6 +30,7 @@ export function ConfirmDialogProvider({ children }) {
                 message: options.message || 'Are you sure you want to delete this item?\nThis action cannot be undone.',
                 confirmText: options.confirmText || 'Delete',
                 cancelText: options.cancelText || 'Cancel',
+                confirmBtnClass: options.confirmBtnClass || 'btn-danger',
                 successMessage: options.successMessage || 'Transaction Successful',
                 isProcessing: false,
                 isSuccess: false,
@@ -67,6 +68,7 @@ export function ConfirmDialogProvider({ children }) {
                 message: '',
                 confirmText: '',
                 cancelText: '',
+                confirmBtnClass: 'btn-danger',
                 successMessage: message || 'Transaction Successful',
                 isProcessing: false,
                 isSuccess: false,
@@ -129,7 +131,7 @@ export function ConfirmDialogProvider({ children }) {
                                                 {modalState.cancelText}
                                             </button>
                                             <button
-                                                className="btn btn-danger w-50 py-2 fw-medium"
+                                                className={`btn ${modalState.confirmBtnClass || 'btn-danger'} w-50 py-2 fw-medium`}
                                                 style={{ borderRadius: '8px' }}
                                                 onClick={modalState.onConfirm}
                                                 disabled={modalState.isProcessing || modalState.isSuccess}

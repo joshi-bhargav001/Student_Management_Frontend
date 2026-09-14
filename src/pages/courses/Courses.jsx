@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import SearchBar from '../../components/SearchBar'
 import { loadCourses, searchCourses, deleteCourse } from '../../api/course'
 import { useConfirm } from '../../context/ConfirmDialogContext'
 
 export default function Courses() {
+  const location = useLocation()
   const { user } = useAuth()
   const confirm = useConfirm()
   const isAdmin = user?.role === 'ADMIN'
@@ -45,15 +46,19 @@ export default function Courses() {
   }
 
   useEffect(() => {
-    load({ page: 0, size: 6 })
+    const initialPage = location.state?.page ?? 0
+    load({ page: initialPage, size: 6 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const prevQueryRef = useRef(query)
+
   useEffect(() => {
-    if (!hasInitializedSearchRef.current) {
-      hasInitializedSearchRef.current = true
+    if (prevQueryRef.current === query) {
       return
     }
+    prevQueryRef.current = query
+
     const id = window.setTimeout(async () => {
       const kw = query.trim()
       if (kw) {
@@ -176,11 +181,18 @@ export default function Courses() {
                         <span>{course.totalSemester}</span>
                       </div>
                     </div>
-                    <div className="col-12">
+                    <div className="col-6">
                       <div className="d-flex align-items-center text-muted">
-                        <svg className="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                        <svg className="me-2 flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
                         <span className="me-2 text-dark">Department:</span>
-                        <span>{course.department}</span>
+                        <span className="text-truncate">{course.department}</span>
+                      </div>
+                    </div>
+                    <div className="col-6">
+                      <div className="d-flex align-items-center text-muted">
+                        <svg className="me-2 flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12"></path><path d="M6 8h12"></path><path d="m6 13 8.5 8"></path><path d="M6 13h3"></path><path d="M9 13c6.667 0 6.667-10 0-10"></path></svg>
+                        <span className="me-2 text-dark">Fees:</span>
+                        <span className="text-truncate">₹ {course.fees || '0'}</span>
                       </div>
                     </div>
                   </div>
@@ -188,7 +200,7 @@ export default function Courses() {
                   {isAdmin && <div className="d-flex gap-2">
                     <Link
                       to={`/edit-course/${course.id}`}
-                      state={{ course }}
+                      state={{ course, page: pageInfo.page }}
                       className="btn btn-sm flex-grow-1 rounded-3 py-2 fw-semibold border-1"
                       style={{ color: '#f59e0b', borderColor: '#fcd34d', background: 'rgba(245,158,11,0.02)' }}
                     >

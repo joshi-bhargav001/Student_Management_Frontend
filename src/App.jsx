@@ -37,7 +37,9 @@ function AppShell() {
       message: 'Are you sure you want to logout?',
       confirmText: 'Logout',
       successMessage: 'Logout Successful',
-      onConfirm: async () => {
+      onConfirm: async () => { }
+    }).then((confirmed) => {
+      if (confirmed) {
         logout()
       }
     }).catch(console.error)
@@ -95,6 +97,7 @@ function AppShell() {
           <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
           <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
           <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
+
           <Route path="/teacher" element={<ProtectedRoute><Teacher /></ProtectedRoute>} />
           <Route path="/add-teacher" element={<ProtectedRoute adminOnly><AddTeacher /></ProtectedRoute>} />
           <Route path="/add-course" element={<ProtectedRoute adminOnly><AddCourse /></ProtectedRoute>} />

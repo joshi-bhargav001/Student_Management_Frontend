@@ -18,6 +18,7 @@ export default function EditCourse() {
         duration: existing.duration || '',
         totalSemester: existing.totalSemester || '',
         department: existing.department || existing.code || '',
+        fees: existing.fees || '',
         status: existing.status || 'ACTIVE'
     })
     const [loading, setLoading] = useState(false)
@@ -41,10 +42,11 @@ export default function EditCourse() {
                 duration: formData.duration,
                 totalSemester: Number(formData.totalSemester),
                 department: formData.department,
+                fees: Number(formData.fees),
                 status: formData.status
             })
             await confirm.success('Edit Course', 'Transaction Completed')
-            navigate('/courses')
+            navigate('/courses', { state: { page: state?.page } })
         } catch (err) {
             setError(err.message || 'Failed to update course')
         } finally {
@@ -116,6 +118,21 @@ export default function EditCourse() {
                         </div>
                     </div>
 
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold" htmlFor="fees">Fees</label>
+                        <input
+                            type="number"
+                            className="form-control"
+                            id="fees"
+                            name="fees"
+                            placeholder="e.g. 50000"
+                            min="0"
+                            value={formData.fees}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+
                     <div className="mb-4">
                         <label className="form-label fw-semibold" htmlFor="status">Status</label>
                         <select
@@ -134,7 +151,7 @@ export default function EditCourse() {
                         <button
                             type="button"
                             className="btn btn-outline-secondary px-4"
-                            onClick={() => navigate('/courses')}
+                            onClick={() => navigate('/courses', { state: { page: state?.page } })}
                         >
                             Cancel
                         </button>

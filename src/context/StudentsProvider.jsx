@@ -61,6 +61,8 @@ export function StudentsProvider({ children }) {
         first: true,
         last: true
       })
+      // Reset all filter/pagination params so they don't persist after logout
+      lastLoadParamsRef.current = { page: 0, size: 7, keyword: '', course: '', division: '' }
       return
     }
     load()
