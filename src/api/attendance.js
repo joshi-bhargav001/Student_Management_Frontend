@@ -124,20 +124,14 @@ export async function saveAttendance({ date, attendanceRecords }) {
   return sendAttendanceRequest(ATTENDANCE_API_BASE, 'POST', payload)
 }
 
-/** Update an existing attendance record. PUT /api/attendance/{id} */
-export async function updateAttendance({ id, date, attendanceRecords }) {
+/** Update an individual attendance record. PUT /api/attendance/{id} */
+export async function updateAttendance(id, date, studentId, status) {
   if (!id) throw new Error('Attendance ID is required to update attendance')
 
-  const payload = buildAttendancePayload(date, attendanceRecords)
-  return sendAttendanceRequest(`${ATTENDANCE_API_BASE}/${encodeURIComponent(id)}`, 'PUT', payload)
-}
-
-export async function updateSingleAttendance(id, date, studentId, status) {
-  if (!id) throw new Error('Attendance ID is required')
   const payload = {
     studentId: Number(studentId),
-    status: status.toUpperCase(),
-    date: date
+    date: date,
+    status: status.toUpperCase()
   }
   return sendAttendanceRequest(`${ATTENDANCE_API_BASE}/${encodeURIComponent(id)}`, 'PUT', payload)
 }
@@ -146,11 +140,13 @@ export async function updateSingleAttendance(id, date, studentId, status) {
  * Fetch attendance records for a given date, course, and division.
  * GET /api/attendance?date=YYYY-MM-DD&course=BCA&division=A
  */
-export async function fetchAttendance({ date, course, division } = {}) {
+export async function fetchAttendance({ date, course, division, page, size } = {}) {
   const params = new URLSearchParams()
   if (date) params.set('date', date)
   if (course) params.set('course', course)
   if (division) params.set('division', division)
+  if (page !== undefined) params.set('page', page)
+  if (size !== undefined) params.set('size', size)
 
   const url = `${ATTENDANCE_API_BASE}${params.toString() ? `?${params.toString()}` : ''}`
   const res = await fetchWithRefresh(url, { headers: getAuthHeaders() })

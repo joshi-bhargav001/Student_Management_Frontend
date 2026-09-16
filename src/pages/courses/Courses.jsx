@@ -188,13 +188,7 @@ export default function Courses() {
                         <span className="text-truncate">{course.department}</span>
                       </div>
                     </div>
-                    <div className="col-6">
-                      <div className="d-flex align-items-center text-muted">
-                        <svg className="me-2 flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12"></path><path d="M6 8h12"></path><path d="m6 13 8.5 8"></path><path d="M6 13h3"></path><path d="M9 13c6.667 0 6.667-10 0-10"></path></svg>
-                        <span className="me-2 text-dark">Fees:</span>
-                        <span className="text-truncate">₹ {course.fees || '0'}</span>
-                      </div>
-                    </div>
+
                   </div>
 
                   {isAdmin && <div className="d-flex gap-2">

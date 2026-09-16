@@ -14,7 +14,6 @@ export default function AddCourse() {
         duration: '',
         totalSemester: '',
         department: '',
-        fees: '',
         status: 'ACTIVE'
     })
     const [loading, setLoading] = useState(false)
@@ -38,7 +37,6 @@ export default function AddCourse() {
                 duration: formData.duration,
                 totalSemester: Number(formData.totalSemester),
                 department: formData.department,
-                fees: Number(formData.fees),
                 status: formData.status
             })
             await confirm.success('Add Course', 'Transaction Completed')
@@ -114,20 +112,6 @@ export default function AddCourse() {
                         </div>
                     </div>
 
-                    <div className="mb-3">
-                        <label className="form-label fw-semibold" htmlFor="fees">Fees</label>
-                        <input
-                            type="number"
-                            className="form-control"
-                            id="fees"
-                            name="fees"
-                            placeholder="e.g. 50000"
-                            min="0"
-                            value={formData.fees}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
 
                     <div className="mb-4">
                         <label className="form-label fw-semibold" htmlFor="status">Status</label>

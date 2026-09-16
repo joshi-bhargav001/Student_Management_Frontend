@@ -47,8 +47,7 @@ export default function AddStudent() {
     <div className="card form-card shadow-sm p-4">
       <h5>Add Student</h5>
 
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
-      {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
+
 
       <form onSubmit={submit}>
         <div className="mb-3">

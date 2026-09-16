@@ -27,7 +27,7 @@ function formatDisplayDate(isoDate) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-const PAGE_SIZE = 7
+const PAGE_SIZE = 50
 
 export default function AttendanceSheet({ refreshTrigger }) {
   const [selectedDate, setSelectedDate]       = useState(getTodayIsoDate)
@@ -41,6 +41,12 @@ export default function AttendanceSheet({ refreshTrigger }) {
   const [viewed, setViewed]                   = useState(false)
   const [attempted, setAttempted]             = useState(false)
   const [currentPage, setCurrentPage]         = useState(0)
+
+  const [serverTotalPages, setServerTotalPages] = useState(1)
+  const [serverTotalElements, setServerTotalElements] = useState(0)
+  const [isServerPaginated, setIsServerPaginated] = useState(false)
+
+  const PAGE_SIZE = 7
 
   useEffect(() => {
     async function loadDropdowns() {
@@ -60,33 +66,46 @@ export default function AttendanceSheet({ refreshTrigger }) {
 
   useEffect(() => {
     if (refreshTrigger > 0 && viewed) {
-      handleViewAttendance()
+      handleViewAttendance(currentPage)
     }
   }, [refreshTrigger])
 
   const stats = useMemo(() => {
+    // Note: If server paginated, these stats only reflect the current page unless the server provides full stats.
     const present = records.filter(r => (r.status || '').toUpperCase() === 'PRESENT').length
     const absent  = records.filter(r => (r.status || '').toUpperCase() === 'ABSENT').length
     const leave   = records.filter(r => (r.status || '').toUpperCase() === 'LEAVE').length
-    return { total: records.length, present, absent, leave }
-  }, [records])
+    return { total: isServerPaginated ? serverTotalElements : records.length, present, absent, leave }
+  }, [records, isServerPaginated, serverTotalElements])
 
-  const totalPages  = Math.ceil(records.length / PAGE_SIZE)
-  const pageRecords = records.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
+  const totalPages  = isServerPaginated ? serverTotalPages : Math.ceil(records.length / PAGE_SIZE)
+  const pageRecords = isServerPaginated ? records : records.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
 
-  const handleViewAttendance = async () => {
+  const handleViewAttendance = async (pageToLoad = 0) => {
     setAttempted(true)
     if (!course || !division) return
     setLoading(true)
     setError('')
     setViewed(false)
-    setCurrentPage(0)
+    setCurrentPage(pageToLoad)
     try {
-      const data = await fetchAttendance({ date: selectedDate, course, division })
+      const data = await fetchAttendance({ date: selectedDate, course, division, page: pageToLoad, size: PAGE_SIZE })
+      
       let list = []
-      if (Array.isArray(data))                  list = data
-      else if (Array.isArray(data?.attendances)) list = data.attendances
-      else if (Array.isArray(data?.content))     list = data.content
+      if (data && Array.isArray(data.content)) {
+        list = data.content
+        setIsServerPaginated(true)
+        setServerTotalPages(data.totalPages || 1)
+        setServerTotalElements(data.totalElements || list.length)
+      } else {
+        if (Array.isArray(data))                  list = data
+        else if (Array.isArray(data?.attendances)) list = data.attendances
+        
+        setIsServerPaginated(false)
+        setServerTotalPages(Math.ceil(list.length / PAGE_SIZE))
+        setServerTotalElements(list.length)
+      }
+      
       setRecords(list)
       setViewed(true)
     } catch {
@@ -98,12 +117,24 @@ export default function AttendanceSheet({ refreshTrigger }) {
     }
   }
 
+  const handlePageChange = (newPage) => {
+    if (isServerPaginated) {
+      handleViewAttendance(newPage)
+    } else {
+      setCurrentPage(newPage)
+    }
+  }
+
   const handleReset = () => {
     setViewed(false)
     setRecords([])
     setError('')
     setAttempted(false)
     setCurrentPage(0)
+    setCourse('')
+    setDivision('')
+    setSelectedDate(getTodayIsoDate())
+    setIsServerPaginated(false)
   }
 
   const getStatus = (raw = '') => STATUS_CONFIG[(raw || '').toUpperCase()] || { label: raw || '—', color: '#64748b', bg: '#f8fafc', dot: '#64748b' }
@@ -179,7 +210,7 @@ export default function AttendanceSheet({ refreshTrigger }) {
         </div>
 
         <div className="as-view-wrap">
-          <button id="as-view-btn" type="button" className="as-view-btn" onClick={handleViewAttendance} disabled={loading}>
+          <button id="as-view-btn" type="button" className="as-view-btn" onClick={() => handleViewAttendance(0)} disabled={loading}>
             {loading
               ? <><span className="as-spinner" aria-hidden="true"/> Loading...</>
               : <><span aria-hidden="true">🔍</span>&nbsp; View Attendance</>
@@ -274,15 +305,15 @@ export default function AttendanceSheet({ refreshTrigger }) {
 
                   <div className="as-pagination">
                     <div className="as-pg-info">
-                      Showing {currentPage * PAGE_SIZE + 1} to {Math.min((currentPage + 1) * PAGE_SIZE, records.length)} of {records.length} students
+                      Showing {currentPage * PAGE_SIZE + 1} to {Math.min((currentPage + 1) * PAGE_SIZE, isServerPaginated ? serverTotalElements : records.length)} of {isServerPaginated ? serverTotalElements : records.length} students
                     </div>
                     {totalPages > 1 && (
                       <div className="as-pg-controls">
-                        <button type="button" className="as-pg-nav" disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)}>‹ Previous</button>
+                        <button type="button" className="as-pg-nav" disabled={currentPage === 0} onClick={() => handlePageChange(currentPage - 1)}>‹ Previous</button>
                         {Array.from({ length: totalPages }, (_, i) => (
-                          <button key={i} type="button" className={`as-pg-btn${currentPage === i ? ' active' : ''}`} onClick={() => setCurrentPage(i)}>{i + 1}</button>
+                          <button key={i} type="button" className={`as-pg-btn${currentPage === i ? ' active' : ''}`} onClick={() => handlePageChange(i)}>{i + 1}</button>
                         ))}
-                        <button type="button" className="as-pg-nav" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(p => p + 1)}>Next ›</button>
+                        <button type="button" className="as-pg-nav" disabled={currentPage >= totalPages - 1} onClick={() => handlePageChange(currentPage + 1)}>Next ›</button>
                       </div>
                     )}
                   </div>

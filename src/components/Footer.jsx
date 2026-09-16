@@ -47,6 +47,7 @@ export default function Footer(){
             <li><Link to="/students">Students</Link></li>
             <li><Link to="/courses">Courses</Link></li>
             <li><Link to="/attendance">Attendance</Link></li>
+            <li><Link to="/teacher">Teacher</Link></li>
           </ul>
         </div>
 
@@ -64,7 +65,6 @@ export default function Footer(){
           <h5>System Info</h5>
           <div className="info-row"><span>Version</span><strong>1.0.0</strong></div>
           <div className="info-row"><span>Server Status</span><strong className={`status ${serverStatus}`}>{statusText}</strong></div>
-          <div className="info-row"><span>Last Updated</span><strong>03 June 2026</strong></div>
           <div className="info-row"><span>Environment</span><strong className="env">Development</strong></div>
         </div>
       </div>

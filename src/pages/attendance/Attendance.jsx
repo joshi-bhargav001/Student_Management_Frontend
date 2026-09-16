@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { fetchCoursesDropdown } from '../../api/course'
 import { fetchDivisions, fetchStudentsByFilter } from '../../api/students'
-import { saveAttendance, updateAttendance, fetchAttendance, updateSingleAttendance } from '../../api/attendance'
+import { saveAttendance, updateAttendance, fetchAttendance } from '../../api/attendance'
 import { useConfirm } from '../../context/ConfirmDialogContext'
 import { useAuth } from '../../context/AuthContext'
 import AttendanceSheet from './AttendanceSheet'
@@ -54,8 +54,6 @@ export default function Attendance() {
   const [totalPages, setTotalPages] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
   const [saving, setSaving] = useState(false)
-  // Toast notification state: { type: 'success' | 'error' | 'warning', message: string }
-  const [toast, setToast] = useState(null)
   // Persists status selections across page changes: { [studentId]: 'Present' | 'Absent' | 'Leave' }
   const [allStatuses, setAllStatuses] = useState({})
   // Tracks the last saved attendance status to show green/blue action state in the table.
@@ -66,14 +64,6 @@ export default function Attendance() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   // Tracks whether user has clicked Load Students at least once (for showing validation hint)
   const [attempted, setAttempted] = useState(false)
-
-  // Auto-dismiss toast notification after 4.5 seconds
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 4500)
-      return () => clearTimeout(timer)
-    }
-  }, [toast])
 
   useEffect(() => {
     async function loadDropdowns() {
@@ -146,7 +136,7 @@ export default function Attendance() {
       console.error('Failed to load attendance students:', error)
       setStudents([])
       setLoadError('Unable to load students for this course and division.')
-      setToast({ type: 'error', message: 'Unable to load students for this course and division.' })
+      confirm.alert('Error', 'Unable to load students for this course and division.')
     } finally {
       setLoadingStudents(false)
     }
@@ -161,27 +151,36 @@ export default function Attendance() {
     let initialIds = {}
     
     try {
-      const attData = await fetchAttendance({ date: selectedDate, course, division })
+      const attData = await fetchAttendance({ date: selectedDate, course, division, size: 1000 })
       let attRecords = []
       let attId = null
       
-      if (attData && !Array.isArray(attData)) {
+      if (attData && Array.isArray(attData.content)) {
+        attRecords = attData.content
         attId = attData.id || attData.attendanceId
-        attRecords = attData.attendances || attData.content || []
+      } else if (attData && Array.isArray(attData.attendances)) {
+        attRecords = attData.attendances
+        attId = attData.id || attData.attendanceId
       } else if (Array.isArray(attData)) {
         attRecords = attData
         if (attRecords.length > 0) {
-          attId = attRecords[0].attendanceId || attRecords[0].id // Fallback if id is in records
+          attId = attRecords[0].attendanceId || attRecords[0].id
         }
+      } else if (attData && typeof attData === 'object') {
+        attId = attData.id || attData.attendanceId
+        attRecords = attData.attendances || attData.content || attData.data || []
       }
       
       if (attId) setAttendanceId(attId)
       
       attRecords.forEach(r => {
-        const sId = r.studentId || r.student?.id
+        const sId = r.studentId ?? r.student?.id ?? r.student?.studentId ?? r.student_id
+        const recId = r.id ?? r.attendanceId ?? r.attendance?.id ?? r.attendance_id
         if (sId) {
           initialStatuses[sId] = (r.status || '').charAt(0).toUpperCase() + (r.status || '').slice(1).toLowerCase()
-          initialIds[sId] = r.id || r.attendanceId || r.attendance?.id
+          if (recId) {
+            initialIds[sId] = recId
+          }
         }
       })
       
@@ -189,7 +188,7 @@ export default function Attendance() {
       setSavedStatuses(initialStatuses)
       setRecordIds(initialIds)
     } catch (e) {
-      // If fetching fails (e.g. 404 not found), we just start fresh
+      console.warn('Failed to fetch attendance on load:', e)
       setAllStatuses({})
       setSavedStatuses({})
       setRecordIds({})
@@ -273,7 +272,7 @@ export default function Attendance() {
       }))
 
     if (attendanceRecords.length === 0) {
-      setToast({ type: 'warning', message: 'No valid attendance records to save.' })
+      confirm.alert('No Selection', 'No valid attendance records to save. Please mark attendance for at least one student.')
       return null
     }
 
@@ -300,21 +299,35 @@ export default function Attendance() {
             setAttendanceId(nextAttendanceId)
           }
 
-          const nextSaved = {}
-          students.forEach(student => {
-            if (student.status) nextSaved[student.id] = student.status
-          })
-          setSavedStatuses(prev => ({ ...prev, ...nextSaved }))
+          // Reload student attendance records from backend to get fresh database IDs
+          await handleLoadStudents()
           
           setRefreshTrigger(prev => prev + 1)
+        } catch (error) {
+          console.error('Failed to save attendance:', error)
+          throw error
         } finally {
           setSaving(false)
         }
       }
-    }).catch(error => {
+    }).catch(async error => {
       if (error) {
-        console.error('Failed to save attendance:', error)
-        setToast({ type: 'error', message: error.message || 'Failed to save attendance. Please try again.' })
+        console.error('Failed to save attendance dialog catch:', error)
+        // If already marked, fetch existing records so record IDs are populated
+        await handleLoadStudents()
+        if (error.message && (error.message.toLowerCase().includes('already marked') || error.message.toLowerCase().includes('conflict') || error.message.toLowerCase().includes('409'))) {
+          confirm({
+            title: 'Attendance Already Marked',
+            message: `${error.message}. Would you like to update the attendance instead?`,
+            confirmText: 'Update',
+            confirmBtnClass: 'btn-primary',
+            onConfirm: handleUpdateAttendance
+          }).catch(e => {
+            if (e) console.error('Failed to handle update prompt:', e)
+          })
+        } else {
+          confirm.alert('Error', error.message || 'Failed to save attendance. Please try again.')
+        }
       }
     })
   }
@@ -332,18 +345,49 @@ export default function Attendance() {
       onConfirm: async () => {
         setSaving(true)
         
-        // 1-second delay as requested before showing success and running API
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
         try {
+          // Ensure we have latest record IDs from backend if any are missing
+          let currentRecordIds = { ...recordIds }
+          let currentSavedStatuses = { ...savedStatuses }
+
+          const hasMissingIds = attendanceRecords.some(rec => !currentRecordIds[rec.studentId])
+          if (hasMissingIds || Object.keys(currentRecordIds).length === 0) {
+            try {
+              const attData = await fetchAttendance({ date: selectedDate, course, division, size: 1000 })
+              let attRecords = []
+              if (attData && Array.isArray(attData.content)) {
+                attRecords = attData.content
+              } else if (attData && Array.isArray(attData.attendances)) {
+                attRecords = attData.attendances
+              } else if (Array.isArray(attData)) {
+                attRecords = attData
+              } else if (attData && typeof attData === 'object') {
+                attRecords = attData.attendances || attData.content || attData.data || []
+              }
+
+              attRecords.forEach(r => {
+                const sId = r.studentId ?? r.student?.id ?? r.student?.studentId ?? r.student_id
+                const recId = r.id ?? r.attendanceId ?? r.attendance?.id ?? r.attendance_id
+                if (sId) {
+                  if (recId) currentRecordIds[sId] = recId
+                  if (r.status) currentSavedStatuses[sId] = (r.status || '').charAt(0).toUpperCase() + (r.status || '').slice(1).toLowerCase()
+                }
+              })
+              setRecordIds(currentRecordIds)
+              setSavedStatuses(currentSavedStatuses)
+            } catch (fetchErr) {
+              console.warn('Could not fetch existing record IDs before update:', fetchErr)
+            }
+          }
+
           const promises = []
           const toCreate = []
 
           attendanceRecords.forEach(rec => {
-            const rId = recordIds[rec.studentId]
+            const rId = currentRecordIds[rec.studentId]
             if (rId) {
-              if (rec.status !== savedStatuses[rec.studentId]) {
-                promises.push(updateSingleAttendance(rId, selectedDate, rec.studentId, rec.status))
+              if (!currentSavedStatuses[rec.studentId] || rec.status !== currentSavedStatuses[rec.studentId]) {
+                promises.push(updateAttendance(rId, selectedDate, rec.studentId, rec.status))
               }
             } else {
               toCreate.push(rec)
@@ -355,20 +399,20 @@ export default function Attendance() {
           }
 
           if (promises.length === 0) {
-            setToast({ type: 'warning', message: 'No changes detected to update.' })
-            setSaving(false)
+            confirm.alert('No Changes', 'No changes detected to update.')
             return
           }
 
           await Promise.all(promises)
           
-          // Refresh the data to grab any newly created IDs and reset statuses
+          // Refresh the data to grab any newly created/updated IDs and reset statuses
           await handleLoadStudents()
           
           setRefreshTrigger(prev => prev + 1)
         } catch (error) {
           console.error('Failed to update attendance:', error)
-          setToast({ type: 'error', message: error.message || 'Failed to update attendance. Please try again.' })
+          confirm.alert('Error', error.message || 'Failed to update attendance. Please try again.')
+          throw error
         } finally {
           setSaving(false)
         }
@@ -641,21 +685,6 @@ export default function Attendance() {
         </div>
       )}
 
-      {toast && (
-        <div className={`toast-notification toast-${toast.type}`} role="alert">
-          <div className="toast-content">
-            <span className="toast-icon">
-              {toast.type === 'success' && 'âœ…'}
-              {toast.type === 'error' && 'âš ï¸'}
-              {toast.type === 'warning' && 'ðŸ””'}
-            </span>
-            <span className="toast-message">{toast.message}</span>
-          </div>
-          <button type="button" className="toast-close" onClick={() => setToast(null)} aria-label="Close notification">
-            
-          </button>
-        </div>
-      )}
-    </div>
+      </div>
   )
 }
